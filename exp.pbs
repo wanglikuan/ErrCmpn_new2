@@ -1,0 +1,40 @@
+##!/bin/sh
+#PBS -N o_mpi_ps
+#PBS -l nodes=1:ppn=1 -W x=GRES:gpu@1
+#PBS -l walltime=36:00:00
+#PBS -q qgpu01
+#PBS -V
+#PBS -S /bin/bash
+
+module load cuda-9.0
+module load openmpi-3.0.1-gcc-5.5.0
+#################################################################
+NP=`cat $PBS_NODEFILE | wc -l`
+NN=`cat $PBS_NODEFILE | sort | uniq | tee /tmp/nodes.$$ | wc -l`
+cat $PBS_NODEFILE > /tmp/nodefile.$$
+echo "process will start at : "
+date
+echo "++++++++++++++++++++++++++++++++++++++++"
+cd $PBS_O_WORKDIR
+
+nvidia-smi > nv.out
+
+mpirun -n $NP --mca blt self,openib python3 LearnerSimulation.py --model=LROnMnist --epoch=50 --workers=5 > res_SD.out
+#mpirun -n $NP --mca blt self,openib python3 base_HA.py --model=MnistCNN --epoch=10 --m=4 --s=1 > res_NGD8.out
+#mpirun -n $NP --mca blt self,openib python3 base_CA.py --coding=NGD --model=LROnMnist --epoch=400 --m=16 --s=3 > res_NGD16.out
+#mpirun -n $NP --mca blt self,openib python3 base_CA.py --coding=NGD --model=LROnMnist --epoch=400 --m=32 --s=3 > res_NGD32.out
+#mpirun -n $NP --mca blt self,openib python3 base_CA.py --coding=CA --model=LROnMnist --epoch=400 > res_CA.out
+#mpirun -n $NP --mca blt self,openib python3 base_CA.py --coding=NGD --model=LROnMnist --epoch=400 > res_NGD.out
+
+#mpirun -n $NP --mca blt self,openib python3 tmp.py --coding=NGD --model=MnistCNN --epoch=10 > res_NGD.out
+#mpirun -n $NP --mca blt self,openib python3 tmp.py --coding=CA --model=MnistCNN --epoch=10 > res_CA.out
+
+
+echo "++++++++++++++++++++++++++++++++++++++++"
+echo "process end at : "
+date
+rm -f /tmp/nodefile.$$
+rm -f /tmp/nodes.$$
+
+module unload openmpi-3.0.1-gcc-5.5.0
+module unload cuda-9.0
